@@ -2,6 +2,8 @@
 
 Programa para transcrição de áudios usando Python
 
+A língua da transcrição pode ser alterada na linha indicada.
+
 O API de transcrição do Google é utilizado. Atenção: este código não fornece a chave para acesso a este API, que deve ser adicionada na linha correspondente do arquivo principal.
 
 Requisitos:
