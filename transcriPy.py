@@ -43,7 +43,7 @@ def process(filepath):
             audio = recognizer.record(source)
 
         # Use Google's speech recognition
-        transcript = recognizer.recognize_google(audio, language="pt-BR") # Change language here
+        transcript = recognizer.recognize_google(audio, language="pt-BR") # Change language and add key here
         print(transcript)
 
         # Write output to file
