@@ -1,5 +1,5 @@
-# Temporary files
 temp.wav
+ffmpeg.exe
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

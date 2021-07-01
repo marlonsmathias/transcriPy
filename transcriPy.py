@@ -2,12 +2,40 @@ import speech_recognition as sr
 from audioread import audio_open
 import tkinter.filedialog
 import tkinter as tk
-from os import remove, system
+import os
 from math import ceil
 
 # TODO: Add other speech recognition servers
 # TODO: Add language selector
-# TODO: Add checker for ffmpeg and maybe autodownloader
+# TODO: Add support for video files
+
+def initialMessage():
+    print('transcriPy')
+    print('')
+    print('Código fonte disponível em <https://github.com/marlonsmathias/transcriPy>')
+    print('')
+    print('Licença: GPL 3.0 (em inglês):')
+    print('This program is free software: you can redistribute it and/or modify')
+    print('it under the terms of the GNU General Public License as published by')
+    print('the Free Software Foundation, either version 3 of the License, or')
+    print('(at your option) any later version.')
+    print('')
+    print('This program is distributed in the hope that it will be useful,')
+    print('but WITHOUT ANY WARRANTY; without even the implied warranty of')
+    print('MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the')
+    print('GNU General Public License for more details.')
+    print('')
+    print('You should have received a copy of the GNU General Public License')
+    print('along with this program.  If not, see <https://www.gnu.org/licenses/>')
+    print('')
+
+def getKey(filePath = './key.txt'):
+    try:
+        with open(filePath, "r") as f:
+            return f.readline().replace("\n","")
+    except:
+        print(f"A chave para o Google Cloud Speech API não foi encontrada no arquivo {filePath}.\nA chave padrão será utilizada, devendo ser usada apenas para fins de teste e uso pessoal.\nO programa funcionará normalmente.")
+        return None
 
 def getFileName():
     root = tk.Tk()
@@ -16,7 +44,33 @@ def getFileName():
     print('Abrindo arquivo: ' + fileName)
     return fileName
 
-def process(filepath):
+def checkffmpeg():
+    if os.name == 'nt':
+        f = os.system('where ffmpeg > NUL 2>&1')
+        if f != 0:
+            print('')
+            print('O programa ffmpeg não foi encontrado neste computador e deverá ser baixado para o transcriPy funcionar.')
+            print('Este processo é necessário apenas uma vez.')
+            print('Siga os seguintes passos:')
+            print('1 - Baixe o arquivo do link: <https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip>')
+            print('2 - Extraia a pasta')
+            print('3 - Copie o arquivo ffmpeg.exe, que está em ffmpeg-x.x-essentials_build/bin da pasta extraida')
+            print('4 - Cole este arquivo na mesma pasta do programa de transcrição')
+            input('Aperte Enter para sair')
+            exit()
+
+
+    else:
+        f = os.system('which ffmpeg > /dev/null 2>&1')
+        if f != 0:
+            print('O programa ffmpeg não foi encontrado neste computador,')
+            print('em algumas distribuições Linux, ele pode ser instalado com o comando:')
+            print('sudo apt install ffmpeg')
+            input('Aperte Enter para sair')
+            exit()
+
+
+def process(filepath,language='pt-BR',googleKey=None):
 
     with audio_open(filepath) as f:
         audioLength = f.duration
@@ -36,14 +90,14 @@ def process(filepath):
         print(f"Processando bloco {index+1} de {nChunks}")
         
         # Split chunk with ffmpeg
-        system(f"ffmpeg -hide_banner -loglevel error -y -ss {60*index} -i \"{filepath}\" -t 60 temp.wav")
+        os.system(f"ffmpeg -hide_banner -loglevel error -y -ss {60*index} -i \"{filepath}\" -t 60 temp.wav")
 
         # Load chunk
         with sr.AudioFile('./temp.wav') as source:
             audio = recognizer.record(source)
 
         # Use Google's speech recognition
-        transcript = recognizer.recognize_google(audio, language="pt-BR") # Change language and add key here
+        transcript = recognizer.recognize_google(audio, language=language, key=googleKey)
         print(transcript)
 
         # Write output to file
@@ -52,12 +106,23 @@ def process(filepath):
             outHandle.write(f'{transcript}\n')
 
     # Clean up temporary file
-    remove('./temp.wav')
+    os.remove('./temp.wav')
 
 # Main part
+if __name__ == "__main__":
+    # Aviso inicial
+    initialMessage()
 
-# Get file name
-filepath = getFileName()
+    # Get Google Cloud Speech API key
+    googleKey = getKey()
 
-# Process file
-process(filepath)
+    # Get file name
+    filepath = getFileName()
+    if not filepath:
+        exit()
+
+    # Check ffmpeg
+    checkffmpeg()
+
+    # Process file
+    process(filepath,language='pt-BR',googleKey=googleKey) # Alterar língua aqui
