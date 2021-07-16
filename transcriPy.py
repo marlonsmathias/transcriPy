@@ -34,7 +34,9 @@ def getKey(filePath = './key.txt'):
         with open(filePath, "r") as f:
             return f.readline().replace("\n","")
     except:
-        print(f"A chave para o Google Cloud Speech API não foi encontrada no arquivo {filePath}.\nA chave padrão será utilizada, devendo ser usada apenas para fins de teste e uso pessoal.\nO programa funcionará normalmente.")
+        print(f"A chave para o wit.ai API não foi encontrada no arquivo {filePath}.\nA chave pode ser gerada em <https://wit.ai/>. É necessário fazer login.")
+        input('Aperte Enter para sair')
+        exit()
         return None
 
 def getFileName():
@@ -70,7 +72,9 @@ def checkffmpeg():
             exit()
 
 
-def process(filepath,language='pt-BR',googleKey=None):
+def process(filepath,apiKey=None):
+
+    blockLength = 10
 
     with audio_open(filepath) as f:
         audioLength = f.duration
@@ -79,8 +83,8 @@ def process(filepath,language='pt-BR',googleKey=None):
     outName = filepath[:-4] + '-transcrito.txt'
 
     # Compute number of chunks
-    nChunks = ceil(audioLength/60)
-    print(f"{audioLength} segundos: Dividindo em {nChunks} blocos de 1 minuto cada")
+    nChunks = ceil(audioLength/blockLength)
+    print(f"{audioLength} segundos: Dividindo em {nChunks} blocos de {blockLength} segundos cada")
 
 
     recognizer = sr.Recognizer()
@@ -90,17 +94,13 @@ def process(filepath,language='pt-BR',googleKey=None):
         print(f"Processando bloco {index+1} de {nChunks}")
         
         # Split chunk with ffmpeg
-        os.system(f"ffmpeg -hide_banner -loglevel error -y -ss {60*index} -i \"{filepath}\" -t 60 temp.wav")
+        os.system(f"ffmpeg -hide_banner -loglevel error -y -ss {blockLength*index} -i \"{filepath}\" -t {blockLength} temp.wav")
 
         # Load chunk
         with sr.AudioFile('./temp.wav') as source:
             audio = recognizer.record(source)
 
-        # Use Google's speech recognition
-        try:
-            transcript = recognizer.recognize_google(audio, language=language, key=googleKey)
-        except:
-            transcript = ''
+        transcript = recognizer.recognize_wit(audio, key=apiKey)
             
         print(transcript)
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     initialMessage()
 
     # Get Google Cloud Speech API key
-    googleKey = getKey()
+    apiKey = getKey()
 
     # Get file name
     filepath = getFileName()
@@ -129,4 +129,4 @@ if __name__ == "__main__":
     checkffmpeg()
 
     # Process file
-    process(filepath,language='pt-BR',googleKey=googleKey) # Alterar língua aqui
+    process(filepath,apiKey=apiKey)
