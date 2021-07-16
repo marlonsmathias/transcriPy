@@ -1,9 +1,9 @@
 import speech_recognition as sr
-from audioread import audio_open
 import tkinter.filedialog
 import tkinter as tk
 import os
-from math import ceil
+import re
+from math import floor,ceil
 
 # TODO: Add other speech recognition servers
 # TODO: Add language selector
@@ -72,29 +72,62 @@ def checkffmpeg():
             exit()
 
 
-def process(filepath,apiKey=None):
+def getBlocks(filepath,minLength=0.3,maxLength=10):
+    os.system(f"ffmpeg -i {filepath} -af silencedetect=noise=-30dB:d=0.5 -f null - 2> temp.txt")
+    starts = [0]
+    durations = []
 
-    blockLength = 10
+    with open('temp.txt') as f:
+        for line in f:
+            if 'silence_duration:' in line:
+                numbers = re.findall("[-+]?\d*\.\d+|\d+",line)
+                silenceEnd = float(numbers[-2])
+                silenceDuration = float(numbers[-1])
+                durations.append(silenceEnd-silenceDuration-starts[-1])
+                starts.append(silenceEnd)
+            if 'time=' in line:
+                for chunk in line.split():
+                    if 'time=' in chunk:
+                        numbers = re.findall("[-+]?\d*\.\d+|\d+",line)
+                        end = 3600*int(numbers[0]) + 60*int(numbers[1]) + float(numbers[2])
 
-    with audio_open(filepath) as f:
-        audioLength = f.duration
+    os.remove('./temp.txt')
+
+    durations.append(end-starts[-1])
+
+    blocks = []
+    for i in range(0,len(starts)):
+        s = starts[i]
+        d = durations[i]
+        if d>minLength and d<=maxLength:
+            blocks.append([s, d])
+        if d>maxLength:
+            n = ceil(d/maxLength)
+            for j in range(0,n):
+                blocks.append([s+j*d/n, d/n])
+
+    return blocks
+
+def process(filepath,blocks,apiKey=None):
 
     # Get output file
     outName = filepath[:-4] + '-transcrito.txt'
 
-    # Compute number of chunks
-    nChunks = ceil(audioLength/blockLength)
-    print(f"{audioLength} segundos: Dividindo em {nChunks} blocos de {blockLength} segundos cada")
-
-
     recognizer = sr.Recognizer()
     
+    nBlocks = len(blocks)
+
     # Now process each chunk
-    for index in range(0,nChunks):
-        print(f"Processando bloco {index+1} de {nChunks}")
+    for i in range(0,nBlocks):
+
+        s = blocks[i][0]
+        d = blocks[i][1]
+        tStr = f"{floor(s/3600)}:{floor(s/60):02}:{s%60:04.1f}"
+
+        print(f"Processando bloco {i+1} de {nBlocks} ({tStr})")
         
         # Split chunk with ffmpeg
-        os.system(f"ffmpeg -hide_banner -loglevel error -y -ss {blockLength*index} -i \"{filepath}\" -t {blockLength} temp.wav")
+        os.system(f"ffmpeg -hide_banner -loglevel error -y -ss {s} -i \"{filepath}\" -t {d} temp.wav")
 
         # Load chunk
         with sr.AudioFile('./temp.wav') as source:
@@ -106,7 +139,7 @@ def process(filepath,apiKey=None):
 
         # Write output to file
         with open(outName, "a") as outHandle:
-            outHandle.write(f'{index}\n')
+            outHandle.write(f'{tStr}\n')
             outHandle.write(f'{transcript}\n')
 
     # Clean up temporary file
@@ -117,7 +150,7 @@ if __name__ == "__main__":
     # Aviso inicial
     initialMessage()
 
-    # Get Google Cloud Speech API key
+    # Get wit.ai API key
     apiKey = getKey()
 
     # Get file name
@@ -128,5 +161,8 @@ if __name__ == "__main__":
     # Check ffmpeg
     checkffmpeg()
 
+    # Get audio blocks
+    blocks = getBlocks(filepath,maxLength=10)
+
     # Process file
-    process(filepath,apiKey=apiKey)
+    process(filepath,blocks,apiKey=apiKey)
