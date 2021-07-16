@@ -97,7 +97,11 @@ def process(filepath,language='pt-BR',googleKey=None):
             audio = recognizer.record(source)
 
         # Use Google's speech recognition
-        transcript = recognizer.recognize_google(audio, language=language, key=googleKey)
+        try:
+            transcript = recognizer.recognize_google(audio, language=language, key=googleKey)
+        except:
+            transcript = ''
+            
         print(transcript)
 
         # Write output to file
