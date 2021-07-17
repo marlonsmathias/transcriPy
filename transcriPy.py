@@ -73,11 +73,11 @@ def checkffmpeg():
 
 
 def getBlocks(filepath,minLength=0.3,maxLength=10):
-    os.system(f"ffmpeg -i {filepath} -af silencedetect=noise=-30dB:d=0.5 -f null - 2> temp.txt")
+    os.system(f"ffmpeg -i \"{filepath}\" -af silencedetect=noise=-30dB:d=0.5 -f null - 2> temp.txt")
     starts = [0]
     durations = []
 
-    with open('temp.txt') as f:
+    with open('temp.txt', encoding='utf-8') as f:
         for line in f:
             if 'silence_duration:' in line:
                 numbers = re.findall("[-+]?\d*\.\d+|\d+",line)
@@ -133,8 +133,11 @@ def process(filepath,blocks,apiKey=None):
         with sr.AudioFile('./temp.wav') as source:
             audio = recognizer.record(source)
 
-        transcript = recognizer.recognize_wit(audio, key=apiKey)
-            
+        try:
+            transcript = recognizer.recognize_wit(audio, key=apiKey)
+        except:
+            pass
+
         print(transcript)
 
         # Write output to file
