@@ -136,7 +136,7 @@ def process(filepath,blocks,apiKey=None):
         try:
             transcript = recognizer.recognize_wit(audio, key=apiKey)
         except:
-            pass
+            transcript = ''
 
         print(transcript)
 
