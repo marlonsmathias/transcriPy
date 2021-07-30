@@ -4,6 +4,7 @@ import tkinter as tk
 import os
 import re
 from math import floor,ceil
+import traceback
 
 # TODO: Add other speech recognition servers
 # TODO: Add language selector
@@ -32,12 +33,17 @@ def initialMessage():
 def getKey(filePath = './key.txt'):
     try:
         with open(filePath, "r") as f:
-            return f.readline().replace("\n","")
+            s = f.readline().replace("\n","").split()
+            apiKey = s[0]
+            if len(s) > 1:
+                api = s[1]
+            else:
+                api = 'wit'
+        return api, apiKey
     except:
-        print(f"A chave para o wit.ai API não foi encontrada no arquivo {filePath}.\nA chave pode ser gerada em <https://wit.ai/>. É necessário fazer login.")
-        input('Aperte Enter para sair')
-        exit()
-        return None
+        print(f"Nenhuma chave de API foi encontrada no arquivo {filePath}.\nA chave para o wit.ai pode ser gerada em <https://wit.ai/>. É necessário fazer login.")
+        print('O serviço do Google será usado com chave padrão, que deve ser usada apenas para fins de teste e uso pessoal.\nO programa funcionará normalmente.')
+        return 'google', None
 
 def getFileName():
     root = tk.Tk()
@@ -108,7 +114,7 @@ def getBlocks(filepath,minLength=0.3,maxLength=10):
 
     return blocks
 
-def process(filepath,blocks,apiKey=None):
+def process(filepath,blocks,api='wit',apiKey=None):
 
     # Get output file
     outName = filepath[:-4] + '-transcrito.txt'
@@ -132,10 +138,14 @@ def process(filepath,blocks,apiKey=None):
         # Load chunk
         with sr.AudioFile('./temp.wav') as source:
             audio = recognizer.record(source)
-
         try:
-            transcript = recognizer.recognize_wit(audio, key=apiKey)
+            if api=='wit':
+                transcript = recognizer.recognize_wit(audio, key=apiKey)
+            else:
+                transcript = recognizer.recognize_google(audio, key=apiKey, language='pt-BR')
         except:
+            print("Erro no bloco:")
+            traceback.print_exc()
             transcript = ''
 
         print(transcript)
@@ -154,7 +164,7 @@ if __name__ == "__main__":
     initialMessage()
 
     # Get wit.ai API key
-    apiKey = getKey()
+    api,apiKey = getKey()
 
     # Get file name
     filepath = getFileName()
@@ -168,4 +178,4 @@ if __name__ == "__main__":
     blocks = getBlocks(filepath,maxLength=10)
 
     # Process file
-    process(filepath,blocks,apiKey=apiKey)
+    process(filepath,blocks,api=api,apiKey=apiKey)
