@@ -4,22 +4,17 @@ PORTUGUESE VERSION
 
 Programa para transcrição de áudios usando Python
 
-A língua da transcrição pode ser alterada na linha indicada.
-
-O API Wit.ai. Atenção: este código não fornece a chave para acesso a este API, que deve ser adicionada em um arquivo chamado key.txt (a criação deste arquivo é de responsabilidade do usuário).
-
 Requisitos:
 
     Python libraries:
-        speech_recognition
-        audioread
+        vosk
         tkinter
-        wget
     Programas externos:
         ffmpeg
 
 O ffmpeg deve estar acessível pelo caminho do sistema ou estar na mesma pasta que o arquivo principal.
 
+Modelos de linguagem podem ser baixados de: <https://alphacephei.com/vosk/models>
 
 ENGLISH VERSION
 
@@ -32,11 +27,11 @@ Wit.ai API is used. Attention: This code does not provide an access key for the 
 Requirements:
 
     Python libraries:
-        speech_recognition
-        audioread
+        vosk
         tkinter
-        wget
     External programs:
         ffmpeg
 
 ffmpeg must be reachable from the system path or in the same folder as the main file.
+
+Language models may be downloaded from: <https://alphacephei.com/vosk/models>
