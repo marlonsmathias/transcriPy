@@ -5,10 +5,7 @@ import os
 import subprocess
 from math import floor
 import sys
-
-# TODO: Add other speech recognition servers
-# TODO: Add language selector
-# TODO: Add support for video files
+import pyaudio
 
 def initialMessage():
     print('transcriPy')
@@ -76,7 +73,11 @@ def process(filepath,modelFolder,sampleRate):
     recognizer = KaldiRecognizer(model,sampleRate)
 
     # Read audio with ffmpeg
-    ffmpegProcess = subprocess.Popen(['ffmpeg', '-loglevel', 'quiet', '-i', filepath, '-ar', str(sampleRate) , '-ac', '1', '-f', 's16le', '-'], stdout=subprocess.PIPE)
+    #stream = subprocess.Popen(['ffmpeg','-loglevel', 'quiet', '-f', 'dshow', '-i', 'audio=Microfone (Logitech Webcam C925e)', '-ar', str(sampleRate) , '-ac', '1', '-f', 's16le', '-', filepath], stdout=subprocess.PIPE)
+
+    p = pyaudio.PyAudio()
+
+    stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=2000)
 
     # Get terminal size
     width = os.get_terminal_size()[0]
@@ -88,7 +89,8 @@ def process(filepath,modelFolder,sampleRate):
     # Process chunk
     while True:
         time += dt
-        data = ffmpegProcess.stdout.read(4000)
+        #data = stream.stdout.read(4000)
+        data = stream.read(4000)
         if len(data) == 0:
             break
         if recognizer.AcceptWaveform(data):
