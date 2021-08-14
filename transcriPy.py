@@ -82,8 +82,9 @@ def process(filepath,modelFolder,sampleRate):
     width = os.get_terminal_size()[0]
 
     time = 0
+    time_start = 0
     dt = 8*4000/(16*sampleRate)
-    print(f'[{floor(time/60)}:{floor(time%60):02}]')
+    print(f'[{floor(time/3600)}:{floor(time/60)%60:02}:{floor(time%60):02}]')
 
     # Process chunk
     while True:
@@ -95,13 +96,18 @@ def process(filepath,modelFolder,sampleRate):
             t = recognizer.Result()
             t = t.split('"')[3]
             print(t)
-            print(f'[{floor(time/60)}:{floor(time%60):02}]')
-            with open(outName, "a") as outHandle:
-                outHandle.write(f'{t}\n')
+            print(f'[{floor(time/3600)}:{floor(time/60)%60:02}:{floor(time%60):02}]')
+            if len(t) > 0:
+                with open(outName, "a") as outHandle:
+                    #outHandle.write(f'{t}\n')
+                    outHandle.write(f'[{floor(time_start/3600)}:{floor(time_start/60)%60:02}:{floor(time_start%60):02}] {t}\n')
+            time_start = time
         else:
             t = recognizer.PartialResult()
             t = t.split('"')[3]
             print(t[-width:-1], end='\r')
+            if len(t) == 0:
+                time_start = time
 
 # Main part
 if __name__ == "__main__":
