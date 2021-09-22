@@ -5,7 +5,10 @@ import os
 import subprocess
 from math import floor
 import sys
-import pyaudio
+
+# TODO: Add other speech recognition servers
+# TODO: Add language selector
+# TODO: Add support for video files
 
 def initialMessage():
     print('transcriPy')
@@ -73,43 +76,32 @@ def process(filepath,modelFolder,sampleRate):
     recognizer = KaldiRecognizer(model,sampleRate)
 
     # Read audio with ffmpeg
-    #stream = subprocess.Popen(['ffmpeg','-loglevel', 'quiet', '-f', 'dshow', '-i', 'audio=Microfone (Logitech Webcam C925e)', '-ar', str(sampleRate) , '-ac', '1', '-f', 's16le', '-', filepath], stdout=subprocess.PIPE)
-
-    p = pyaudio.PyAudio()
-
-    stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=2000)
+    ffmpegProcess = subprocess.Popen(['ffmpeg', '-loglevel', 'quiet', '-i', filepath, '-ar', str(sampleRate) , '-ac', '1', '-f', 's16le', '-'], stdout=subprocess.PIPE)
 
     # Get terminal size
     width = os.get_terminal_size()[0]
 
     time = 0
-    time_start = 0
     dt = 8*4000/(16*sampleRate)
-    print(f'[{floor(time/3600)}:{floor(time/60)%60:02}:{floor(time%60):02}]')
+    print(f'[{floor(time/60)}:{floor(time%60):02}]')
 
     # Process chunk
     while True:
         time += dt
-        #data = stream.stdout.read(4000)
-        data = stream.read(4000)
+        data = ffmpegProcess.stdout.read(4000)
         if len(data) == 0:
             break
         if recognizer.AcceptWaveform(data):
             t = recognizer.Result()
             t = t.split('"')[3]
             print(t)
-            print(f'[{floor(time/3600)}:{floor(time/60)%60:02}:{floor(time%60):02}]')
-            if len(t) > 0:
-                with open(outName, "a") as outHandle:
-                    #outHandle.write(f'{t}\n')
-                    outHandle.write(f'[{floor(time_start/3600)}:{floor(time_start/60)%60:02}:{floor(time_start%60):02}] {t}\n')
-            time_start = time
+            print(f'[{floor(time/60)}:{floor(time%60):02}]')
+            with open(outName, "a") as outHandle:
+                outHandle.write(f'{t}\n')
         else:
             t = recognizer.PartialResult()
             t = t.split('"')[3]
             print(t[-width:-1], end='\r')
-            if len(t) == 0:
-                time_start = time
 
 # Main part
 if __name__ == "__main__":
